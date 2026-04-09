@@ -1,0 +1,7 @@
+this is not json
+neither is this line
+{missing the closing brace
+just some random words here
+12345 but not wrapped in json
+[unclosed array
+key: value but not json syntax

@@ -1,0 +1,9 @@
+{"id": 1, "status": "ok", "message": "This line is valid JSON"}
+{"id": 2, "status": "ok", "message": "This line is also valid"}
+{"id": 3, "status": "broken", "message": "Missing closing brace"
+{"id": 4, "status": "ok", "message": "Valid again after the bad line"}
+not json at all — just plain text on line 5
+{"id": 6, "status": "broken", "message": "Trailing comma is invalid",}
+{"id": 7, "status": "ok", "message": "Back to normal", "nested": {"a": 1, "b": [true, false]}}
+{"id": 8, "status": "broken", "value": undefined}
+{"id": 9, "status": "ok", "message": "Final valid line", "score": 42}

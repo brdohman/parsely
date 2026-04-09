@@ -1,0 +1,46 @@
+# SwiftLint Configuration
+# Copied to app/[AppName]/.swiftlint.yml by /init-macos-project or /setup
+
+disabled_rules:
+  - line_length  # Configured below instead
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - explicit_init
+  - redundant_nil_coalescing
+  - force_unwrapping
+  - print_usage
+  - missing_docs
+
+force_unwrapping:
+  severity: error
+
+print_usage:
+  severity: error
+
+missing_docs:
+  severity: warning
+  excludes_extensions: true
+  excludes_inherited_docs: true
+
+line_length:
+  warning: 120
+  error: 150
+
+type_body_length:
+  warning: 300
+  error: 500
+
+file_length:
+  warning: 500
+  error: 1000
+
+function_body_length:
+  warning: 50
+  error: 80
+
+excluded:
+  - "*/Pods"
+  - "*/DerivedData"
+  - "*/.build"
