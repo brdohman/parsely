@@ -1,16 +1,18 @@
 # Parsely
 
-A macOS app for viewing and exploring JSONL (JSON Lines) files. Built because I couldn't find one that didn't make me want to throw my laptop.
+A macOS app for viewing and exploring JSONL (JSON Lines) files. Built because I couldn't find one that didn't make me want to punch my monitor.
 
 ![Parsely Screenshot](screenshot.png)
 
 ## Why This Exists
 
-I've been teaching myself about training models, and with the release of Gemma 4, I wanted to fine-tune it on my own datasets — lectures, writing, marketing emails. That means working with JSONL files. A lot of them.
+I've been teaching myself to fine-tune models, and with the release of Gemma 4, I wanted to train on my own datasets: lectures, writings, LinkedIn posts. That means working with a lot of JSONL files.
 
-Every time I needed to inspect one, I'd open it in TextMate, VS Code, or TextEdit and get hit with a wall of single-line JSON stretching infinitely to the right. Completely unusable. I spent some time asking Claude and ChatGPT if a decent native Mac viewer existed. Nothing fit what I needed — a simple app that parses each line, gives me a collapsible JSON tree, and lets me search across lines.
+Preparing training data by hand wasn't feasible, so I built prompts in Claude Code to analyze and clean my datasets. Claude is a great model, but I still needed to check its work. No code review tool or security analyzer can tell me whether my data was properly parsed. That's on me to verify.
 
-Now, is it possible that a perfect JSONL viewer for Mac exists and I simply failed at searching the internet? Absolutely. If you find one, please don't tell me. I've already built this and I'm emotionally invested.
+The problem was actually looking at the files. TextMate, VS Code, TextEdit: each one hit me with a massive wall of single-line JSON stretching infinitely to the right. Completely unusable. I searched for a decent native Mac viewer, tried a few, and nothing fit what I needed: a simple app that parses each line, gives me a collapsible JSON tree, and lets me search across lines.
+
+Now, is it possible that a perfect JSONL viewer for Mac exists, or a plugin for an app I already have, and I simply failed at searching the internet? Absolutely. If you find one, please don't tell me. I've already built this and I'm emotionally invested.
 
 ## What It Does
 
@@ -62,7 +64,7 @@ The `jsonl-example-files/` directory includes sample files you can use to test t
 
 ## How It Was Built
 
-This was built entirely with [Claude Code](https://claude.ai/claude-code) in a single session. The speed was possible because of a reusable `.claude/` directory I maintain for building native macOS and iOS apps. It contains specialized agents — a macOS developer, a designer, a QA engineer — along with skills that stay current on modern Swift patterns, SwiftUI best practices, and Human Interface Guidelines. Point it at a new Xcode project and it already knows how to write, review, and test native Mac apps.
+This was built entirely with [Claude Code](https://claude.ai/claude-code) in a single session. The speed was possible because of a reusable `.claude/` directory I maintain for building native macOS and iOS apps. It contains specialized agents — a macOS developer, a designer, a QA engineer — along with skills that stay current on modern Swift patterns, SwiftUI best practices, and Human Interface Guidelines. Point it at a new Xcode project and it already knows how to write, review, and test native Mac apps. This `.claude/` dir is added to this repo.
 
 **Tech stack:** Swift, SwiftUI, @Observable, async/await, macOS 14.0+
 
