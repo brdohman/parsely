@@ -19,3 +19,6 @@ Packages/
 
 # Build artifacts
 *.dmg
+
+# Review artifacts
+coderabbit-findings-*.md
