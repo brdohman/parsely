@@ -1,0 +1,57 @@
+{
+  "claude_code_version": "2.1.86",
+  "last_check_date": "2026-03-27",
+  "last_deep_dive_date": "2026-03-27",
+  "index_page_count": 72,
+  "changelog_last_version": "2.1.86",
+  "tracked_docs": [
+    "hooks.md",
+    "skills.md",
+    "sub-agents.md",
+    "mcp.md",
+    "settings.md",
+    "plugins.md",
+    "plugins-reference.md",
+    "memory.md",
+    "permissions.md",
+    "agent-teams.md",
+    "scheduled-tasks.md",
+    "features-overview.md"
+  ],
+  "tracked_sources": [
+    {
+      "name": "Anthropic Blog",
+      "url": "https://www.anthropic.com/news",
+      "last_checked": "2026-03-27",
+      "search_query": "\"claude code\" site:anthropic.com/news"
+    },
+    {
+      "name": "Boris Cherny (X)",
+      "url": "https://x.com/bcherny",
+      "last_checked": "2026-03-27",
+      "search_query": "@bcherny claude code"
+    },
+    {
+      "name": "AnthropicAI (X)",
+      "url": "https://x.com/AnthropicAI",
+      "last_checked": "2026-03-27",
+      "search_query": "@AnthropicAI claude code"
+    },
+    {
+      "name": "Piebald-AI System Prompts",
+      "url": "https://github.com/Piebald-AI/claude-code-system-prompts",
+      "last_checked": "2026-03-27",
+      "check_file": "CHANGELOG.md"
+    },
+    {
+      "name": "Releasebot",
+      "url": "https://releasebot.io/updates/anthropic/claude-code",
+      "last_checked": "2026-03-27"
+    },
+    {
+      "name": "API Release Notes",
+      "url": "https://platform.claude.com/docs/en/release-notes/overview",
+      "last_checked": "2026-03-27"
+    }
+  ]
+}

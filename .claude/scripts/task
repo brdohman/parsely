@@ -1,0 +1,245 @@
+#!/usr/bin/env bash
+# task — Context-efficient task operations for Claude Code Agent Teams
+# Place at project root. Call as: ./task <command> <args>
+#
+# Commands:
+#   check   <id> [id...]         API status (pending/in_progress/completed)
+#   status  <id> [id...]         Approval status (pending/approved)
+#   comment <id> [--all]         Latest comment (or all with --all)
+#   summary [id...]              Table overview (all tasks if no ids)
+#   field   <id> <jq-path>      Read any field via jq
+#   set     <id> <jq-path> <val> [--json]  Write any field
+#   approve <id> [id...]         Set metadata.approval = approved
+#   find    <metadata-status>    Find tasks by metadata.status
+#   wait    <id> [interval] [timeout]      Block until completed/failed
+#   wait-field <id> <jq-path> <not-value> [interval] [timeout]  Block until field != value
+#   help                         Show this help
+set -euo pipefail
+
+# ── Resolve tasks directory ──────────────────────────────────────────────
+if [ -z "${CLAUDE_CODE_TASK_LIST_ID:-}" ]; then
+  echo "ERROR: CLAUDE_CODE_TASK_LIST_ID env var is not set." >&2
+  echo "Launch with: CLAUDE_CODE_TASK_LIST_ID=your-project-name claude" >&2
+  exit 1
+fi
+
+TASKS_DIR="$HOME/.claude/tasks/$CLAUDE_CODE_TASK_LIST_ID"
+
+if [ ! -d "$TASKS_DIR" ]; then
+  echo "ERROR: Tasks directory not found: $TASKS_DIR" >&2
+  exit 1
+fi
+
+# ── Helpers ──────────────────────────────────────────────────────────────
+tf() {
+  local f="$TASKS_DIR/$1.json"
+  if [ ! -f "$f" ]; then echo "ERROR: Task $1 not found at $f" >&2; return 1; fi
+  echo "$f"
+}
+
+need_jq() {
+  if ! command -v jq &>/dev/null; then
+    echo "ERROR: jq is required. Install with: brew install jq" >&2
+    exit 1
+  fi
+}
+
+# ── Commands ─────────────────────────────────────────────────────────────
+cmd_check() {
+  need_jq
+  if [ $# -eq 0 ]; then echo "Usage: ./task check <id> [id...]"; exit 1; fi
+  for id in "$@"; do
+    f=$(tf "$id") || continue
+    s=$(jq -r '.status // "unknown"' "$f")
+    if [ $# -eq 1 ]; then echo "$s"; else echo "$id: $s"; fi
+  done
+}
+
+cmd_status() {
+  need_jq
+  if [ $# -eq 0 ]; then echo "Usage: ./task status <id> [id...]"; exit 1; fi
+  for id in "$@"; do
+    f=$(tf "$id") || continue
+    s=$(jq -r '.metadata.approval // "unset"' "$f")
+    if [ $# -eq 1 ]; then echo "$s"; else echo "$id: $s"; fi
+  done
+}
+
+cmd_comment() {
+  need_jq
+  if [ $# -eq 0 ]; then echo "Usage: ./task comment <id> [--all]"; exit 1; fi
+  local id="$1"
+  f=$(tf "$id") || exit 1
+  if [ "${2:-}" = "--all" ]; then
+    jq -r '.metadata.comments // [] | .[] | "\(.type // "note") [\(.timestamp // "")]: \(.content // "")"' "$f"
+  else
+    local count
+    count=$(jq -r '.metadata.comments // [] | length' "$f")
+    if [ "$count" = "0" ]; then
+      echo "no comments"
+    else
+      jq -r '.metadata.comments[-1] | "\(.type // "note"): \(.content // "")"' "$f"
+    fi
+  fi
+}
+
+cmd_summary() {
+  need_jq
+  printf "%-6s %-12s %-15s %-10s %s\n" "ID" "STATUS" "APPROVAL" "OWNER" "SUBJECT"
+  printf "%-6s %-12s %-15s %-10s %s\n" "---" "------" "--------" "-----" "-------"
+
+  _summarize() {
+    local f="$1"
+    local id
+    id=$(basename "$f" .json)
+    local api_s meta_s subj owner
+    api_s=$(jq -r '.status // "?"' "$f")
+    meta_s=$(jq -r '.metadata.approval // "-"' "$f")
+    subj=$(jq -r '.subject // "untitled"' "$f")
+    owner=$(jq -r '.owner // "-"' "$f")
+    printf "%-6s %-12s %-15s %-10s %s\n" "$id" "$api_s" "$meta_s" "$owner" "$subj"
+  }
+
+  if [ $# -eq 0 ]; then
+    for f in "$TASKS_DIR"/*.json; do
+      [ -f "$f" ] && _summarize "$f"
+    done
+  else
+    for id in "$@"; do
+      f=$(tf "$id") || continue
+      _summarize "$f"
+    done
+  fi
+}
+
+cmd_field() {
+  need_jq
+  if [ $# -lt 2 ]; then echo "Usage: ./task field <id> <jq-path>"; exit 1; fi
+  local id="$1"; shift
+  f=$(tf "$id") || exit 1
+  jq -r "$*" "$f"
+}
+
+cmd_set() {
+  need_jq
+  if [ $# -lt 3 ]; then echo "Usage: ./task set <id> <jq-path> <value> [--json]"; exit 1; fi
+  local id="$1" path="$2" value="$3" mode="${4:-}"
+  f=$(tf "$id") || exit 1
+  if [ "$mode" = "--json" ]; then
+    jq "$path = $value" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+  else
+    jq --arg v "$value" "$path = \$v" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+  fi
+  echo "ok: $id $path = $value"
+}
+
+cmd_approve() {
+  need_jq
+  if [ $# -eq 0 ]; then echo "Usage: ./task approve <id> [id...]"; exit 1; fi
+  for id in "$@"; do
+    f=$(tf "$id") || continue
+    jq '.metadata.approval = "approved"' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+    echo "approved: $id"
+  done
+}
+
+cmd_find() {
+  need_jq
+  if [ $# -eq 0 ]; then echo "Usage: ./task find <metadata-status>"; exit 1; fi
+  local target="$1" found=0
+  for f in "$TASKS_DIR"/*.json; do
+    [ -f "$f" ] || continue
+    local s
+    s=$(jq -r '.metadata.status // ""' "$f")
+    if [ "$s" = "$target" ]; then
+      local id subj
+      id=$(basename "$f" .json)
+      subj=$(jq -r '.subject // "untitled"' "$f")
+      echo "$id: $subj"
+      found=$((found + 1))
+    fi
+  done
+  if [ $found -eq 0 ]; then echo "none found"; fi
+}
+
+cmd_wait() {
+  need_jq
+  if [ $# -eq 0 ]; then echo "Usage: ./task wait <id> [interval_sec] [timeout_sec]"; exit 1; fi
+  local id="$1" interval="${2:-30}" timeout="${3:-1800}" elapsed=0
+  f=$(tf "$id") || exit 1
+  local s
+  while [ $elapsed -lt $timeout ]; do
+    s=$(jq -r '.status // "unknown"' "$f")
+    case "$s" in
+      completed) echo "completed"; exit 0 ;;
+      failed)    echo "failed"; exit 1 ;;
+    esac
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+  done
+  echo "timeout after ${timeout}s (last: $s)"
+  exit 2
+}
+
+cmd_wait_field() {
+  need_jq
+  if [ $# -lt 3 ]; then
+    echo "Usage: ./task wait-field <id> <jq-path> <not-value> [interval_sec] [timeout_sec]"
+    echo "  Blocks until the field at <jq-path> is no longer <not-value>."
+    echo "  Example: ./task wait-field 53 .metadata.review_result awaiting 30 900"
+    exit 1
+  fi
+  local id="$1" path="$2" not_value="$3" interval="${4:-30}" timeout="${5:-900}" elapsed=0
+  f=$(tf "$id") || exit 1
+  local current
+  while [ $elapsed -lt $timeout ]; do
+    current=$(jq -r "$path // \"null\"" "$f")
+    if [ "$current" != "$not_value" ]; then
+      echo "$current"
+      exit 0
+    fi
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+  done
+  echo "timeout after ${timeout}s (still: $not_value)"
+  exit 2
+}
+
+cmd_help() {
+  echo "Usage: ./task <command> [args]"
+  echo ""
+  echo "Commands:"
+  echo "  check   <id> [id...]              API status (pending/in_progress/completed)"
+  echo "  status  <id> [id...]              Approval status (pending/approved)"
+  echo "  comment <id> [--all]              Latest comment (or all with --all)"
+  echo "  summary [id...]                   Table overview (all tasks if no ids)"
+  echo "  field   <id> <jq-path>            Read any field via jq"
+  echo "  set     <id> <jq-path> <val>      Write any field (add --json for non-strings)"
+  echo "  approve <id> [id...]              Set metadata.approval = approved"
+  echo "  find    <metadata-status>         Find tasks by metadata.status"
+  echo "  wait    <id> [interval] [timeout] Block until completed/failed"
+  echo "  wait-field <id> <path> <not-val> [interval] [timeout]"
+  echo "                                    Block until field changes from value"
+  echo "  help                              Show this help"
+  echo ""
+  echo "Tasks dir: $TASKS_DIR"
+}
+
+# ── Dispatch ─────────────────────────────────────────────────────────────
+if [ $# -eq 0 ]; then cmd_help; exit 0; fi
+
+command="$1"; shift
+case "$command" in
+  check)   cmd_check "$@" ;;
+  status)  cmd_status "$@" ;;
+  comment) cmd_comment "$@" ;;
+  summary) cmd_summary "$@" ;;
+  field)   cmd_field "$@" ;;
+  set)     cmd_set "$@" ;;
+  approve) cmd_approve "$@" ;;
+  find)    cmd_find "$@" ;;
+  wait)    cmd_wait "$@" ;;
+  wait-field) cmd_wait_field "$@" ;;
+  help)    cmd_help ;;
+  *)       echo "Unknown command: $command"; cmd_help; exit 1 ;;
+esac

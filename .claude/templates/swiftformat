@@ -1,0 +1,15 @@
+# SwiftFormat Configuration
+# Copied to app/[AppName]/.swiftformat by /init-macos-project or /setup
+
+--swiftversion 6.0
+--maxwidth 120
+--indent 4
+--trimwhitespace always
+--stripunusedargs closure-only
+--self remove
+--importgrouping testable-last
+--semicolons never
+--wraparguments preserve
+--wrapcollections preserve
+--disable redundantRawValues
+--disable trailingCommas

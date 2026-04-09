@@ -1,0 +1,5 @@
+{"product_id": "P001", "name": "Wireless Keyboard", "category": "electronics", "price": 59.99, "in_stock": true, "tags": ["peripheral", "bluetooth", "office"], "rating": 4.5}
+{"product_id": "P002", "name": "Standing Desk Mat", "category": "furniture", "price": 34.50, "in_stock": true, "tags": ["ergonomic", "office"], "rating": 4.8}
+{"product_id": "P003", "name": "USB-C Hub 7-in-1", "category": "electronics", "price": 42.00, "in_stock": false, "tags": ["peripheral", "usb-c", "adapter"], "rating": 3.9}
+{"product_id": "P004", "name": "Noise Cancelling Headphones", "category": "audio", "price": 129.99, "in_stock": true, "tags": ["bluetooth", "noise-cancelling", "over-ear"], "rating": 4.7}
+{"product_id": "P005", "name": "Webcam HD 1080p", "category": "electronics", "price": 74.95, "in_stock": true, "tags": ["video", "streaming", "usb"], "rating": 4.2}

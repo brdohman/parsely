@@ -1,0 +1,5 @@
+{"event_id": "EVT-100", "timestamp": "2026-03-15T09:12:33Z", "type": "page_view", "metadata": {"page": "/home", "referrer": "search", "duration_ms": 3200}, "status": "ok"}
+{"event_id": "EVT-101", "timestamp": "2026-03-15T09:14:07Z", "type": "button_click", "metadata": {"element": "signup_cta", "page": "/home", "variant": "blue"}, "status": "ok"}
+{"event_id": "EVT-102", "timestamp": "2026-03-15T09:15:44Z", "type": "form_submit", "metadata": {"form": "newsletter", "fields_count": 2, "validation_errors": []}, "status": "ok"}
+{"event_id": "EVT-103", "timestamp": "2026-03-15T09:18:22Z", "type": "api_call", "metadata": {"endpoint": "/api/v1/items", "method": "GET", "response_ms": 147}, "status": "error"}
+{"event_id": "EVT-104", "timestamp": "2026-03-15T09:20:01Z", "type": "page_view", "metadata": {"page": "/pricing", "referrer": "/home", "duration_ms": 8500}, "status": "ok"}

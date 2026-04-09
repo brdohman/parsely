@@ -1,0 +1,5 @@
+{"station": "KORD", "city": "Chicago", "date": "2026-04-01", "high_f": 58, "low_f": 42, "conditions": "Partly Cloudy", "wind_mph": 12, "precipitation_in": 0.0}
+{"station": "KJFK", "city": "New York", "date": "2026-04-01", "high_f": 63, "low_f": 49, "conditions": "Sunny", "wind_mph": 8, "precipitation_in": 0.0}
+{"station": "KLAX", "city": "Los Angeles", "date": "2026-04-01", "high_f": 72, "low_f": 55, "conditions": "Clear", "wind_mph": 5, "precipitation_in": 0.0}
+{"station": "KSEA", "city": "Seattle", "date": "2026-04-01", "high_f": 51, "low_f": 39, "conditions": "Rain", "wind_mph": 15, "precipitation_in": 0.45}
+{"station": "KDEN", "city": "Denver", "date": "2026-04-01", "high_f": 47, "low_f": 28, "conditions": "Snow Showers", "wind_mph": 20, "precipitation_in": 1.2}

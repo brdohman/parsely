@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+
+# Swift Package Manager
+.build/
+Packages/
+
+# Claude Code
+.claude/settings.local.json
+
+# Build artifacts
+*.dmg
+
+# Review artifacts
+coderabbit-findings-*.md
