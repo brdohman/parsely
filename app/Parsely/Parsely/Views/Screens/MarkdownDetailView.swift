@@ -112,13 +112,15 @@ extension MarkdownDocument {
                 continue
             }
 
-            // Code block
-            if trimmed.hasPrefix("```") {
-                let language = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+            // Code block (backtick ``` or tilde ~~~)
+            if let fence = detectFence(trimmed) {
+                let language = String(trimmed.dropFirst(fence.length)).trimmingCharacters(in: .whitespaces)
+                let closer = String(repeating: String(fence.marker), count: fence.length)
                 var codeLines: [String] = []
                 index += 1
                 while index < lines.count {
-                    if lines[index].trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+                    let closeTrimmed = lines[index].trimmingCharacters(in: .whitespaces)
+                    if closeTrimmed.hasPrefix(closer) && closeTrimmed.drop(while: { $0 == fence.marker }).trimmingCharacters(in: .whitespaces).isEmpty {
                         index += 1
                         break
                     }
@@ -300,6 +302,13 @@ extension MarkdownDocument {
         let afterDot = line.index(after: dotIndex)
         guard afterDot < line.endIndex else { return "" }
         return String(line[line.index(after: afterDot)...]).trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func detectFence(_ line: String) -> (marker: Character, length: Int)? {
+        guard let marker = line.first, (marker == "`" || marker == "~") else { return nil }
+        let runLength = line.prefix(while: { $0 == marker }).count
+        guard runLength >= 3 else { return nil }
+        return (marker, runLength)
     }
 
     private static func isTableRow(_ line: String) -> Bool {
