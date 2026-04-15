@@ -30,7 +30,7 @@ final class TabManager {
         await tab.loadFile(from: url)
 
         // Only create a tab if the file loaded successfully
-        if tab.document != nil {
+        if tab.isLoaded {
             tabs.append(tab)
             activeTabID = tab.id
         } else {

@@ -3,13 +3,39 @@ import Observation
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum FileType {
+    case jsonl
+    case markdown
+}
+
+struct FlatHeading: Identifiable {
+    let heading: MarkdownHeading
+    let depth: Int
+
+    var id: UUID { heading.id }
+}
+
+struct ScrollTarget: Equatable {
+    let lineIndex: Int
+    let trigger: UUID
+
+    init(lineIndex: Int) {
+        self.lineIndex = lineIndex
+        self.trigger = UUID()
+    }
+}
+
 @Observable
 final class ParselyViewModel: Identifiable {
     let id = UUID()
     var displayName: String = String(localized: "No file loaded")
     var fileURL: URL?
+    var fileType: FileType = .jsonl
     var document: JSONLDocument?
+    var markdownDocument: MarkdownDocument?
     var selectedLineID: UUID?
+    var selectedHeadingID: UUID?
+    var scrollTarget: ScrollTarget?
     var isLoading = false
     var errorMessage: String?
     var showFileImporter = false
@@ -44,7 +70,55 @@ final class ParselyViewModel: Identifiable {
     }
 
     var fileName: String {
-        document?.fileName ?? String(localized: "No file loaded")
+        switch fileType {
+        case .jsonl:
+            return document?.fileName ?? String(localized: "No file loaded")
+        case .markdown:
+            return markdownDocument?.fileName ?? String(localized: "No file loaded")
+        }
+    }
+
+    var isLoaded: Bool {
+        switch fileType {
+        case .jsonl: return document != nil
+        case .markdown: return markdownDocument != nil
+        }
+    }
+
+    // MARK: - Markdown Headings
+
+    var flattenedHeadings: [FlatHeading] {
+        guard let doc = markdownDocument else { return [] }
+        return Self.flattenHeadings(doc.headings, depth: 0)
+    }
+
+    var filteredHeadings: [FlatHeading] {
+        let all = flattenedHeadings
+        guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return all }
+        let query = searchText.lowercased()
+        return all.filter { $0.heading.title.lowercased().contains(query) }
+    }
+
+    var headingCount: Int {
+        flattenedHeadings.count
+    }
+
+    var filteredHeadingCount: Int {
+        filteredHeadings.count
+    }
+
+    func selectHeading(_ heading: MarkdownHeading) {
+        selectedHeadingID = heading.id
+        scrollTarget = ScrollTarget(lineIndex: heading.lineIndex)
+    }
+
+    private static func flattenHeadings(_ headings: [MarkdownHeading], depth: Int) -> [FlatHeading] {
+        var result: [FlatHeading] = []
+        for heading in headings {
+            result.append(FlatHeading(heading: heading, depth: depth))
+            result.append(contentsOf: flattenHeadings(heading.children, depth: depth + 1))
+        }
+        return result
     }
 
     // MARK: - File Loading
@@ -53,10 +127,23 @@ final class ParselyViewModel: Identifiable {
         showFileImporter = true
     }
 
+    static func detectFileType(from url: URL) -> FileType {
+        let ext = url.pathExtension.lowercased()
+        switch ext {
+        case "md", "markdown", "mdown", "mkd":
+            return .markdown
+        default:
+            return .jsonl
+        }
+    }
+
     func loadFile(from url: URL) async {
+        let detectedType = Self.detectFileType(from: url)
+
         await MainActor.run {
             isLoading = true
             errorMessage = nil
+            fileType = detectedType
         }
 
         // Security scoped resource access
@@ -67,6 +154,44 @@ final class ParselyViewModel: Identifiable {
             }
         }
 
+        switch detectedType {
+        case .markdown:
+            await loadMarkdownFile(from: url)
+        case .jsonl:
+            await loadJSONLFile(from: url)
+        }
+    }
+
+    private func loadMarkdownFile(from url: URL) async {
+        let result: Result<MarkdownDocument, Error> = await Task.detached(priority: .userInitiated) {
+            Result { try MarkdownDocument.parse(from: url) }
+        }.value
+
+        switch result {
+        case .success(let doc):
+            await MainActor.run {
+                if doc.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    self.displayName = url.lastPathComponent
+                    self.fileURL = url
+                    self.errorMessage = "This file is empty."
+                    self.markdownDocument = nil
+                    self.isLoading = false
+                } else {
+                    self.markdownDocument = doc
+                    self.fileURL = url
+                    self.displayName = url.lastPathComponent
+                    self.isLoading = false
+                }
+            }
+        case .failure(let error):
+            await MainActor.run {
+                self.errorMessage = "Failed to load file: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        }
+    }
+
+    private func loadJSONLFile(from url: URL) async {
         // Parse on a background thread to avoid blocking the UI
         let result: Result<JSONLDocument, Error> = await Task.detached(priority: .userInitiated) {
             Result { try JSONLDocument.parse(from: url) }

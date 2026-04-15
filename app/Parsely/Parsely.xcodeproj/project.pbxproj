@@ -22,6 +22,10 @@
 		AA000013 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* TabManager.swift */; };
 		AA000014 /* TabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100014 /* TabStripView.swift */; };
 		AA000015 /* TabbedRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100015 /* TabbedRootView.swift */; };
+		AA000016 /* MarkdownHeading.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100016 /* MarkdownHeading.swift */; };
+		AA000017 /* MarkdownDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100017 /* MarkdownDocument.swift */; };
+		AA000018 /* MarkdownSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100018 /* MarkdownSidebarView.swift */; };
+		AA000019 /* MarkdownDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100019 /* MarkdownDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +44,10 @@
 		AA100013 /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
 		AA100014 /* TabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabStripView.swift; sourceTree = "<group>"; };
 		AA100015 /* TabbedRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabbedRootView.swift; sourceTree = "<group>"; };
+		AA100016 /* MarkdownHeading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHeading.swift; sourceTree = "<group>"; };
+		AA100017 /* MarkdownDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownDocument.swift; sourceTree = "<group>"; };
+		AA100018 /* MarkdownSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownSidebarView.swift; sourceTree = "<group>"; };
+		AA100019 /* MarkdownDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownDetailView.swift; sourceTree = "<group>"; };
 		AA200001 /* Parsely.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Parsely.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -99,6 +107,8 @@
 				AA100003 /* JSONValue.swift */,
 				AA100004 /* JSONLLine.swift */,
 				AA100005 /* JSONLDocument.swift */,
+				AA100016 /* MarkdownHeading.swift */,
+				AA100017 /* MarkdownDocument.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -110,6 +120,8 @@
 				AA100009 /* DetailView.swift */,
 				AA100010 /* SidebarView.swift */,
 				AA100015 /* TabbedRootView.swift */,
+				AA100018 /* MarkdownSidebarView.swift */,
+				AA100019 /* MarkdownDetailView.swift */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -216,6 +228,10 @@
 				AA000013 /* TabManager.swift in Sources */,
 				AA000014 /* TabStripView.swift in Sources */,
 				AA000015 /* TabbedRootView.swift in Sources */,
+				AA000016 /* MarkdownHeading.swift in Sources */,
+				AA000017 /* MarkdownDocument.swift in Sources */,
+				AA000018 /* MarkdownSidebarView.swift in Sources */,
+				AA000019 /* MarkdownDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
