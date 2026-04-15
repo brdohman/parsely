@@ -22,16 +22,23 @@ struct MarkdownDocument {
     private static func extractHeadingTree(from content: String) -> [MarkdownHeading] {
         let lines = content.components(separatedBy: .newlines)
         var flatHeadings: [MarkdownHeading] = []
-        var inCodeBlock = false
+        var activeFenceMarker: Character?
 
         for (index, line) in lines.enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
-            if trimmed.hasPrefix("```") {
-                inCodeBlock.toggle()
-                continue
+            if let marker = trimmed.first, (marker == "`" || marker == "~") {
+                let runLength = trimmed.prefix(while: { $0 == marker }).count
+                if runLength >= 3 {
+                    if activeFenceMarker == nil {
+                        activeFenceMarker = marker
+                    } else if activeFenceMarker == marker {
+                        activeFenceMarker = nil
+                    }
+                    continue
+                }
             }
-            guard !inCodeBlock else { continue }
+            guard activeFenceMarker == nil else { continue }
 
             if let heading = parseHeadingLine(trimmed, lineIndex: index) {
                 flatHeadings.append(heading)
@@ -56,7 +63,6 @@ struct MarkdownDocument {
         guard rest.first == " " || rest.isEmpty else { return nil }
 
         let title = rest.trimmingCharacters(in: .whitespaces)
-            .replacingOccurrences(of: "^#+\\s*", with: "", options: .regularExpression)
         guard !title.isEmpty else { return nil }
 
         return MarkdownHeading(level: level, title: title, lineIndex: lineIndex, children: [])

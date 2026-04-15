@@ -58,7 +58,7 @@
 
 ### 7-Layer Security Architecture
 
-```
+```text
 Layer 7: PERIODIC REVIEW
   Quarterly AI pentesting, dependency review, compliance review
 

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MarkdownSidebarView: View {
     @Bindable var viewModel: ParselyViewModel
+    @State private var searchState: String = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -10,11 +11,15 @@ struct MarkdownSidebarView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
                         .font(.system(size: 12))
-                    TextField("Search headings\u{2026}", text: $viewModel.searchText)
+                    TextField("Search headings\u{2026}", text: $searchState)
                         .textFieldStyle(.plain)
                         .font(.callout)
-                    if !viewModel.searchText.isEmpty {
+                        .onChange(of: searchState) { _, newValue in
+                            viewModel.searchText = newValue
+                        }
+                    if !searchState.isEmpty {
                         Button {
+                            searchState = ""
                             viewModel.searchText = ""
                         } label: {
                             Image(systemName: "xmark.circle.fill")
@@ -92,8 +97,7 @@ struct MarkdownSidebarView: View {
                 )) { flat in
                     HeadingRowView(
                         flat: flat,
-                        isSelected: viewModel.selectedHeadingID == flat.id,
-                        searchText: viewModel.searchText
+                        isSelected: viewModel.selectedHeadingID == flat.id
                     )
                     .tag(flat.id)
                     .listRowInsets(EdgeInsets())
@@ -141,7 +145,6 @@ struct MarkdownSidebarView: View {
 struct HeadingRowView: View {
     let flat: FlatHeading
     let isSelected: Bool
-    var searchText: String = ""
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {

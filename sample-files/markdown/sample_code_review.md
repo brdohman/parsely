@@ -125,6 +125,7 @@ Line 24 says the project is in the current directory, but Line 73 detects it und
 Inside a `bash` block, Lines 127-128 use `//` comments, which are not valid in shell and will fail if copied literally.
 
 **Proposed fix:**
+
 ```diff
 -// Add linter configuration
 -// Add ignore entries
@@ -142,6 +143,7 @@ Inside a `bash` block, Lines 127-128 use `//` comments, which are not valid in s
 This template omits required workflow fields. Using this snippet can create items that fail later validation checks.
 
 **Proposed fix:**
+
 ```diff
  metadata: {
 -    type: "task",
@@ -173,6 +175,7 @@ Both the spawned agent and the coordinator are instructed to mutate the same sta
 The loop waits for `status == "completed"`, but the review pass sets `result -> "passed"` (status is completed only later). This can keep the loop running after items have effectively passed.
 
 **Proposed fix:**
+
 ```diff
 -WHILE any item has status != "completed":
 +WHILE any item has result != "passed":

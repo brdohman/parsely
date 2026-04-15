@@ -196,6 +196,16 @@ struct TabbedRootView: View {
                     document: mdDoc,
                     scrollTarget: tab.scrollTarget
                 )
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    Text("Unable to display file")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }

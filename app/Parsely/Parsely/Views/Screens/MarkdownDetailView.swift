@@ -69,10 +69,7 @@ private func slugify(_ text: String) -> String {
     slug = slug.replacingOccurrences(of: " ", with: "-")
     slug = slug.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) || $0 == "-" }
         .map { String($0) }.joined()
-    // Collapse multiple hyphens
-    while slug.contains("--") {
-        slug = slug.replacingOccurrences(of: "--", with: "-")
-    }
+    slug = slug.replacingOccurrences(of: "-{2,}", with: "-", options: .regularExpression)
     return slug
 }
 
@@ -566,6 +563,9 @@ struct ResizableTableView: View {
                     } else {
                         NSCursor.pop()
                     }
+                }
+                .onDisappear {
+                    NSCursor.pop()
                 }
                 .accessibilityLabel(Text("Resize table"))
         }
