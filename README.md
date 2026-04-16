@@ -12,7 +12,7 @@ Preparing training data by hand wasn't feasible, so I built prompts in Claude Co
 
 The problem was actually looking at the files. TextMate, VS Code, TextEdit: each one hit me with a massive wall of single-line JSON stretching infinitely to the right. Completely unusable. I searched for a decent native Mac viewer, tried a few, and nothing fit what I needed: a simple app that parses each line, gives me a collapsible JSON tree, and lets me search across lines.
 
-Then I kept using it for markdown files too — READMEs, design docs, code review reports. MacDown didn't render lists well, and raw markdown in a text editor isn't much better than raw JSONL. So I added a markdown viewer with rendered output, a heading tree sidebar, and scroll-aware navigation.
+Then I kept using it for Markdown files too — READMEs, design docs, code review reports. MacDown didn't render lists well, and raw Markdown in a text editor isn't much better than raw JSONL. So I added a Markdown viewer with rendered output, a heading tree sidebar, and scroll-aware navigation.
 
 Now, is it possible that a perfect JSONL/Markdown viewer for Mac exists, or a plugin for an app I already have, and I simply failed at searching the internet? Absolutely. If you find one, please don't tell me. I've already built this and I'm emotionally invested.
 
@@ -59,6 +59,7 @@ Download the latest DMG from [Releases](../../releases), open it, and drag Parse
 | `.md` | Markdown |
 | `.markdown` | Markdown |
 | `.mdown` | Markdown |
+| `.mkd` | Markdown |
 
 ## Keyboard Shortcuts
 

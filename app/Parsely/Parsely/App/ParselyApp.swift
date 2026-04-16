@@ -6,6 +6,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var windowIsReady = false
     private var programmaticWindows: [NSWindow] = []
 
+    deinit {}
+
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Intercept Finder "open document" events BEFORE AppKit's NSDocumentController
         // routes them through CFBundleDocumentTypes (which would spawn ghost windows
@@ -32,10 +34,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         _ event: NSAppleEventDescriptor,
         withReplyEvent reply: NSAppleEventDescriptor
     ) {
-        guard let list = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject)) else { return }
+        guard let list = event.paramDescriptor(forKeyword: AEKeyword(keyDirectObject)),
+              list.numberOfItems > 0 else { return }
 
         var urls: [URL] = []
-        for index in 1...max(list.numberOfItems, 0) {
+        for index in 1...list.numberOfItems {
             guard let item = list.atIndex(index) else { continue }
             if let url = Self.url(from: item) {
                 urls.append(url)
