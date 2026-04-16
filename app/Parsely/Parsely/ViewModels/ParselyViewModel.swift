@@ -107,6 +107,14 @@ final class ParselyViewModel: Identifiable {
         filteredHeadings.count
     }
 
+    var headingLineIndexToID: [Int: UUID] {
+        var map: [Int: UUID] = [:]
+        for flat in flattenedHeadings {
+            map[flat.heading.lineIndex] = flat.heading.id
+        }
+        return map
+    }
+
     func selectHeading(_ heading: MarkdownHeading) {
         selectedHeadingID = heading.id
         scrollTarget = ScrollTarget(lineIndex: heading.lineIndex)

@@ -194,7 +194,11 @@ struct TabbedRootView: View {
             if let mdDoc = tab.markdownDocument {
                 MarkdownDetailView(
                     document: mdDoc,
-                    scrollTarget: tab.scrollTarget
+                    scrollTarget: tab.scrollTarget,
+                    headingLookup: tab.headingLineIndexToID,
+                    onVisibleHeadingChanged: { headingID in
+                        tab.selectedHeadingID = headingID
+                    }
                 )
             } else {
                 VStack(spacing: 12) {
