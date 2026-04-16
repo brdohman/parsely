@@ -8,7 +8,12 @@ struct MarkdownDetailView: View {
         var map: [String: Int] = [:]
         for block in document.blocks {
             if case .heading(_, let text, let lineIndex) = block {
-                let slug = slugify(text)
+                var slug = slugify(text)
+                if map[slug] != nil {
+                    var suffix = 1
+                    while map["\(slug)-\(suffix)"] != nil { suffix += 1 }
+                    slug = "\(slug)-\(suffix)"
+                }
                 map[slug] = lineIndex
             }
         }
@@ -27,21 +32,24 @@ struct MarkdownDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .environment(\.openURL, OpenURLAction { url in
-                if let fragment = url.fragment {
-                    if let lineIndex = anchorMap[fragment] {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            proxy.scrollTo("heading-\(lineIndex)", anchor: .top)
-                        }
-                        return .handled
+                // Only intercept fragment-only links (e.g., #heading-slug)
+                let isFragmentOnly = url.scheme == nil && url.host == nil
+                    && url.query == nil && (url.path.isEmpty || url.path == "/")
+                guard isFragmentOnly, let fragment = url.fragment else {
+                    return .systemAction
+                }
+                if let lineIndex = anchorMap[fragment] {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        proxy.scrollTo("heading-\(lineIndex)", anchor: .top)
                     }
-                    // Try lowercase match as fallback
-                    let lower = fragment.lowercased()
-                    if let lineIndex = anchorMap[lower] {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            proxy.scrollTo("heading-\(lineIndex)", anchor: .top)
-                        }
-                        return .handled
+                    return .handled
+                }
+                let lower = fragment.lowercased()
+                if let lineIndex = anchorMap[lower] {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        proxy.scrollTo("heading-\(lineIndex)", anchor: .top)
                     }
+                    return .handled
                 }
                 return .systemAction
             })
@@ -242,7 +250,7 @@ extension MarkdownDocument {
                 let currentTrimmed = lines[index].trimmingCharacters(in: .whitespaces)
                 if currentTrimmed.isEmpty
                     || currentTrimmed.hasPrefix("#")
-                    || currentTrimmed.hasPrefix("```")
+                    || detectFence(currentTrimmed) != nil
                     || currentTrimmed.hasPrefix(">")
                     || isHorizontalRule(currentTrimmed)
                     || isUnorderedListItem(currentTrimmed)
@@ -490,6 +498,7 @@ struct ResizableTableView: View {
     let headers: [String]
     let rows: [[String]]
     @State private var tableWidth: CGFloat?
+    @State private var measuredWidth: CGFloat?
     @State private var dragStartWidth: CGFloat?
     @State private var isDragging = false
 
@@ -539,7 +548,11 @@ struct ResizableTableView: View {
             }
         }
         .frame(maxWidth: tableWidth ?? .infinity, alignment: .leading)
-        .background(Color.mdCodeBackground)
+        .background(
+            GeometryReader { geo in
+                Color.mdCodeBackground.onAppear { measuredWidth = geo.size.width }
+            }
+        )
         .cornerRadius(6)
         .overlay(
             RoundedRectangle(cornerRadius: 6)
@@ -554,11 +567,11 @@ struct ResizableTableView: View {
                     DragGesture(coordinateSpace: .global)
                         .onChanged { value in
                             if dragStartWidth == nil {
-                                dragStartWidth = tableWidth
+                                dragStartWidth = tableWidth ?? measuredWidth
                             }
                             isDragging = true
                             let delta = value.translation.width
-                            let base = dragStartWidth ?? 600
+                            let base = dragStartWidth ?? measuredWidth ?? 400
                             tableWidth = max(200, base + delta)
                         }
                         .onEnded { _ in
