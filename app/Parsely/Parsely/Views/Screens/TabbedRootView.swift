@@ -1,10 +1,20 @@
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct TabbedRootView: View {
-    @State private var manager = TabManager()
+    @State private var manager: TabManager
     @State private var showFileImporter = false
     @State private var importErrorMessage: String?
+    @State private var windowNumber: Int?
+    @AppStorage("detailZoomLevel") private var zoomLevel: Double = 1.0
+
+    private let initialURLs: [URL]
+
+    init(initialURLs: [URL] = []) {
+        _manager = State(initialValue: TabManager())
+        self.initialURLs = initialURLs
+    }
 
     var body: some View {
         Group {
@@ -16,7 +26,15 @@ struct TabbedRootView: View {
                     VStack(spacing: 0) {
                         TabStripView(manager: manager)
                         Divider()
-                        detailContent(for: activeTab)
+                        GeometryReader { geo in
+                            detailContent(for: activeTab)
+                                .frame(
+                                    width: geo.size.width / zoomLevel,
+                                    height: geo.size.height / zoomLevel,
+                                    alignment: .topLeading
+                                )
+                                .scaleEffect(zoomLevel, anchor: .topLeading)
+                        }
                     }
                 }
                 .toolbar(removing: .sidebarToggle)
@@ -41,6 +59,26 @@ struct TabbedRootView: View {
                             }
                             .help("Copy selected line as pretty-printed JSON (\u{2318}\u{21E7}C)")
                             .disabled(activeTab.selectedLine == nil)
+                        }
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        HStack(spacing: 4) {
+                            Button { zoomOut() } label: {
+                                Image(systemName: "minus.magnifyingglass")
+                            }
+                            .help("Zoom out (\u{2318}-)")
+                            .disabled(zoomLevel <= 0.5)
+
+                            Text(verbatim: "\(Int(zoomLevel * 100))%")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(width: 36)
+
+                            Button { zoomIn() } label: {
+                                Image(systemName: "plus.magnifyingglass")
+                            }
+                            .help("Zoom in (\u{2318}+)")
+                            .disabled(zoomLevel >= 2.0)
                         }
                     }
                 }
@@ -150,9 +188,21 @@ struct TabbedRootView: View {
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             handleDrop(providers: providers)
         }
-        .onOpenURL { url in
-            Task {
+        .background(WindowAccessor { window in
+            windowNumber = window.windowNumber
+        })
+        .task {
+            for url in initialURLs {
                 await manager.openFile(from: url)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openFileURL)) { notification in
+            let target = notification.userInfo?["windowNumber"] as? Int
+            guard target == nil || target == windowNumber else { return }
+            if let url = notification.object as? URL {
+                Task {
+                    await manager.openFile(from: url)
+                }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .switchToPreviousTab)) { _ in
@@ -172,6 +222,15 @@ struct TabbedRootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .closeTab)) { _ in
             manager.closeActiveTab()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .zoomIn)) { _ in
+            zoomIn()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .zoomOut)) { _ in
+            zoomOut()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .zoomReset)) { _ in
+            zoomLevel = 1.0
         }
     }
 
@@ -216,6 +275,14 @@ struct TabbedRootView: View {
         }
     }
 
+    private func zoomIn() {
+        zoomLevel = min(2.0, zoomLevel + 0.1)
+    }
+
+    private func zoomOut() {
+        zoomLevel = max(0.5, zoomLevel - 0.1)
+    }
+
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
@@ -248,5 +315,27 @@ struct TabbedRootView: View {
             }
         }
         return true
+    }
+}
+
+// Captures the NSWindow hosting this SwiftUI view so file-open notifications
+// can be routed to the window on the user's currently-active macOS Space.
+struct WindowAccessor: NSViewRepresentable {
+    let onWindowAvailable: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            if let window = view.window {
+                onWindowAvailable(window)
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if let window = nsView.window {
+            onWindowAvailable(window)
+        }
     }
 }
