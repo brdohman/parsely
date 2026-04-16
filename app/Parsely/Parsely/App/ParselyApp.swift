@@ -53,13 +53,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func route(urls: [URL]) {
         if let existing = parselyWindowOnActiveSpace() {
-            for url in urls {
-                NotificationCenter.default.post(
-                    name: .openFileURL,
-                    object: url,
-                    userInfo: ["windowNumber": existing.windowNumber]
-                )
-            }
+            NotificationCenter.default.post(
+                name: .openFileURL,
+                object: urls,
+                userInfo: ["windowNumber": existing.windowNumber]
+            )
             existing.makeKeyAndOrderFront(nil)
             NSApplication.shared.activate(ignoringOtherApps: true)
         } else {
@@ -84,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let hosting = NSHostingController(rootView: TabbedRootView(initialURLs: urls))
         let window = NSWindow(contentViewController: hosting)
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
-        window.title = "Parsely"
+        window.title = String(localized: "Parsely")
         window.setContentSize(NSSize(width: 1000, height: 700))
         window.isReleasedWhenClosed = false
         window.delegate = self

@@ -66,6 +66,7 @@ struct TabbedRootView: View {
                             Button { zoomOut() } label: {
                                 Image(systemName: "minus.magnifyingglass")
                             }
+                            .accessibilityLabel("Zoom out")
                             .help("Zoom out (\u{2318}-)")
                             .disabled(zoomLevel <= 0.5)
 
@@ -77,6 +78,7 @@ struct TabbedRootView: View {
                             Button { zoomIn() } label: {
                                 Image(systemName: "plus.magnifyingglass")
                             }
+                            .accessibilityLabel("Zoom in")
                             .help("Zoom in (\u{2318}+)")
                             .disabled(zoomLevel >= 2.0)
                         }
@@ -199,8 +201,16 @@ struct TabbedRootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openFileURL)) { notification in
             let target = notification.userInfo?["windowNumber"] as? Int
             guard target == nil || target == windowNumber else { return }
-            if let url = notification.object as? URL {
-                Task {
+            let urls: [URL]
+            if let array = notification.object as? [URL] {
+                urls = array
+            } else if let single = notification.object as? URL {
+                urls = [single]
+            } else {
+                return
+            }
+            Task {
+                for url in urls {
                     await manager.openFile(from: url)
                 }
             }
@@ -334,8 +344,10 @@ struct WindowAccessor: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        if let window = nsView.window {
-            onWindowAvailable(window)
+        DispatchQueue.main.async {
+            if let window = nsView.window {
+                onWindowAvailable(window)
+            }
         }
     }
 }

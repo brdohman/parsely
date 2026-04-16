@@ -19,6 +19,7 @@ Now, is it possible that a perfect JSONL/Markdown viewer for Mac exists, or a pl
 ## What It Does
 
 ### JSONL Viewer
+
 - **Line-by-line JSONL parsing** with error handling for malformed lines
 - **Collapsible JSON trees** with syntax highlighting (strings, numbers, booleans, null)
 - **Real-time search** across all lines in a file
@@ -26,17 +27,19 @@ Now, is it possible that a perfect JSONL/Markdown viewer for Mac exists, or a pl
 - **Pretty-print export** — copy any line as formatted JSON to clipboard (Cmd+Shift+C)
 
 ### Markdown Viewer
+
 - **Rendered markdown** — headings, lists, code blocks, tables, blockquotes, bold/italic/links
-- **Header navigation** — sidebar shows a searchable heading tree; click to jump to any section
+- **Heading navigation** — sidebar shows a searchable heading tree; click to jump to any section
 - **Scroll-aware sidebar** — sidebar highlights the heading you're currently reading as you scroll
 - **Anchor links** — in-document links (like a Table of Contents) scroll to the target heading
 - **Resizable tables** — drag the right edge of any table to adjust its width
 
 ### Shared
+
 - **Multi-file tabs** — open JSONL and Markdown files side by side
 - **Drag and drop** — drop files directly into the app
-- **Open with Parsely** — double-click files in Finder or use "Open With"; files open as tabs in the current window
-- **Per-Space windows** — on multi-desktop setups, opening files from Finder creates a separate Parsely window on the macOS Space you're working in, so Desktop 1 and Desktop 2 keep their own tab sets
+- **Open with Parsely** — double-click files in Finder or use "Open With"; the file opens as a new tab in the Parsely window on your current macOS Space, or creates a new window on that Space if none exists yet
+- **Per-Space windows** — on multi-desktop setups, each Space keeps its own Parsely window with its own tab set, so Desktop 1 and Desktop 2 don't mix
 - **Zoom** — scale the detail pane from 50% to 200% (persists across sessions)
 - **Dark mode** — adaptive colors that follow your system appearance
 - **Native macOS** — SwiftUI, no Electron, no web views
@@ -67,7 +70,7 @@ Download the latest DMG from [Releases](../../releases), open it, and drag Parse
 | Cmd+W | Close tab |
 | Cmd+[ | Previous tab |
 | Cmd+] | Next tab |
-| Cmd++ | Zoom in |
+| Cmd+= | Zoom in |
 | Cmd+- | Zoom out |
 | Cmd+0 | Actual size |
 | Option+Up | Previous line |
