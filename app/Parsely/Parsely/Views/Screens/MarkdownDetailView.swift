@@ -1,8 +1,25 @@
 import SwiftUI
 
+// MARK: - Heading Position Tracking
+
+struct HeadingPosition: Equatable {
+    let lineIndex: Int
+    let headingID: UUID
+    let minY: CGFloat
+}
+
+struct HeadingPositionKey: PreferenceKey {
+    static var defaultValue: [HeadingPosition] = []
+    static func reduce(value: inout [HeadingPosition], nextValue: () -> [HeadingPosition]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
 struct MarkdownDetailView: View {
     let document: MarkdownDocument
     let scrollTarget: ScrollTarget?
+    let headingLookup: [Int: UUID]
+    var onVisibleHeadingChanged: ((UUID) -> Void)?
 
     private var anchorMap: [String: Int] {
         var map: [String: Int] = [:]
@@ -25,14 +42,23 @@ struct MarkdownDetailView: View {
             ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(document.blocks.enumerated()), id: \.offset) { _, block in
-                        MarkdownBlockView(block: block)
+                        MarkdownBlockView(block: block, headingLookup: headingLookup)
                     }
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .coordinateSpace(name: "markdownScroll")
+            .onPreferenceChange(HeadingPositionKey.self) { positions in
+                // Find the heading closest to (but not far below) the top of the scroll view
+                let visible = positions
+                    .filter { $0.minY <= 80 }
+                    .max(by: { $0.minY < $1.minY })
+                if let visible {
+                    onVisibleHeadingChanged?(visible.headingID)
+                }
+            }
             .environment(\.openURL, OpenURLAction { url in
-                // Only intercept fragment-only links (e.g., #heading-slug)
                 let isFragmentOnly = url.scheme == nil && url.host == nil
                     && url.query == nil && (url.path.isEmpty || url.path == "/")
                 guard isFragmentOnly, let fragment = url.fragment else {
@@ -340,6 +366,7 @@ extension MarkdownDocument {
 
 struct MarkdownBlockView: View {
     let block: MarkdownBlock
+    var headingLookup: [Int: UUID] = [:]
 
     var body: some View {
         switch block {
@@ -385,6 +412,20 @@ struct MarkdownBlockView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
                 .id("heading-\(lineIndex)")
+                .background(
+                    GeometryReader { geo in
+                        if let headingID = headingLookup[lineIndex] {
+                            Color.clear.preference(
+                                key: HeadingPositionKey.self,
+                                value: [HeadingPosition(
+                                    lineIndex: lineIndex,
+                                    headingID: headingID,
+                                    minY: geo.frame(in: .named("markdownScroll")).minY
+                                )]
+                            )
+                        }
+                    }
+                )
 
             if level <= 2 {
                 Divider()
