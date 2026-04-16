@@ -501,6 +501,7 @@ struct ResizableTableView: View {
     @State private var measuredWidth: CGFloat?
     @State private var dragStartWidth: CGFloat?
     @State private var isDragging = false
+    @State private var isCursorPushed = false
 
     var body: some View {
         let columnCount = headers.count
@@ -580,6 +581,7 @@ struct ResizableTableView: View {
                         }
                 )
                 .onHover { hovering in
+                    isCursorPushed = hovering
                     if hovering {
                         NSCursor.resizeLeftRight.push()
                     } else {
@@ -587,7 +589,10 @@ struct ResizableTableView: View {
                     }
                 }
                 .onDisappear {
-                    NSCursor.pop()
+                    if isCursorPushed {
+                        NSCursor.pop()
+                        isCursorPushed = false
+                    }
                 }
                 .accessibilityLabel(Text("Resize table"))
         }
