@@ -42,7 +42,7 @@ struct TabItemView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: "doc.text")
+            Image(systemName: tab.fileType == .markdown ? "doc.richtext" : "doc.text")
                 .font(.system(size: 11))
                 .foregroundStyle(isActive ? .primary : .secondary)
 

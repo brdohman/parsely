@@ -1,6 +1,6 @@
 # Parsely
 
-A macOS app for viewing and exploring JSONL (JSON Lines) files. Line-by-line parsing with collapsible JSON trees, multi-file tabs, search, and pretty-print export.
+A macOS app for viewing and exploring JSONL (JSON Lines) and Markdown files. Line-by-line parsing with collapsible JSON trees, markdown rendering with header navigation, multi-file tabs, search, and pretty-print export.
 
 ## Tech Stack
 
@@ -23,14 +23,18 @@ app/Parsely/
       JSONLDocument.swift        # File parsing, line collection
       JSONLLine.swift            # Individual line with parsed JSON
       JSONValue.swift            # Recursive JSON value enum
+      MarkdownDocument.swift     # Markdown file parsing, heading extraction, block parser
+      MarkdownHeading.swift      # Heading tree model (level, title, children)
     ViewModels/
       ParselyViewModel.swift     # Per-tab state: document, selection, search, export
       TabManager.swift           # Tab collection management
     Views/
       Screens/
         TabbedRootView.swift     # Root view: NavigationSplitView + tabs + toolbar
-        SidebarView.swift        # Line list with inline search
+        SidebarView.swift        # Line list with inline search (JSONL)
         DetailView.swift         # JSON detail renderer
+        MarkdownSidebarView.swift # Collapsible heading tree (Markdown)
+        MarkdownDetailView.swift  # Rendered markdown with scroll-to-heading
         ContentView.swift        # UTType extension only
       Components/
         JSONValueView.swift      # Recursive JSON tree with collapse/expand
@@ -83,4 +87,4 @@ xcodebuild -project Parsely.xcodeproj -scheme Parsely -configuration Release bui
 
 - **App:** `com.brandondohman.parsely`
 - **UTType:** `com.brandondohman.parsely.jsonl`
-- **Supported extensions:** `.jsonl`, `.ndjson`
+- **Supported extensions:** `.jsonl`, `.ndjson`, `.md`, `.markdown`, `.mdown`, `.mkd`

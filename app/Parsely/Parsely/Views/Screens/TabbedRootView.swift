@@ -10,13 +10,13 @@ struct TabbedRootView: View {
         Group {
             if let activeTab = manager.activeTab {
                 NavigationSplitView {
-                    SidebarView(viewModel: activeTab)
+                    sidebarContent(for: activeTab)
                         .navigationSplitViewColumnWidth(min: 200, ideal: 260, max: 400)
                 } detail: {
                     VStack(spacing: 0) {
                         TabStripView(manager: manager)
                         Divider()
-                        DetailView(line: activeTab.selectedLine, searchText: activeTab.searchText)
+                        detailContent(for: activeTab)
                     }
                 }
                 .toolbar(removing: .sidebarToggle)
@@ -26,20 +26,22 @@ struct TabbedRootView: View {
                         Button(action: { showFileImporter = true }) {
                             Label("Open File", systemImage: "folder")
                         }
-                        .help("Open a .jsonl file")
+                        .help("Open a file")
                     }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            activeTab.exportSelectedLineAsPrettyJSON()
-                        } label: {
-                            if activeTab.exportCopied {
-                                Label("Copied!", systemImage: "checkmark")
-                            } else {
-                                Label("Copy as JSON", systemImage: "doc.on.clipboard")
+                    if activeTab.fileType == .jsonl {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button {
+                                activeTab.exportSelectedLineAsPrettyJSON()
+                            } label: {
+                                if activeTab.exportCopied {
+                                    Label("Copied!", systemImage: "checkmark")
+                                } else {
+                                    Label("Copy as JSON", systemImage: "doc.on.clipboard")
+                                }
                             }
+                            .help("Copy selected line as pretty-printed JSON (\u{2318}\u{21E7}C)")
+                            .disabled(activeTab.selectedLine == nil)
                         }
-                        .help("Copy selected line as pretty-printed JSON (\u{2318}\u{21E7}C)")
-                        .disabled(activeTab.selectedLine == nil)
                     }
                 }
                 .overlay {
@@ -111,7 +113,15 @@ struct TabbedRootView: View {
         }
         .fileImporter(
             isPresented: $showFileImporter,
-            allowedContentTypes: [.jsonl, .json, .text, UTType(filenameExtension: "jsonl") ?? .text],
+            allowedContentTypes: [
+                .jsonl,
+                .json,
+                .text,
+                .plainText,
+                UTType(filenameExtension: "jsonl") ?? .text,
+                UTType(filenameExtension: "md") ?? .text,
+                UTType(filenameExtension: "markdown") ?? .text,
+            ],
             allowsMultipleSelection: true
         ) { result in
             switch result {
@@ -165,6 +175,41 @@ struct TabbedRootView: View {
         }
     }
 
+    @ViewBuilder
+    private func sidebarContent(for tab: ParselyViewModel) -> some View {
+        switch tab.fileType {
+        case .jsonl:
+            SidebarView(viewModel: tab)
+        case .markdown:
+            MarkdownSidebarView(viewModel: tab)
+        }
+    }
+
+    @ViewBuilder
+    private func detailContent(for tab: ParselyViewModel) -> some View {
+        switch tab.fileType {
+        case .jsonl:
+            DetailView(line: tab.selectedLine, searchText: tab.searchText)
+        case .markdown:
+            if let mdDoc = tab.markdownDocument {
+                MarkdownDetailView(
+                    document: mdDoc,
+                    scrollTarget: tab.scrollTarget
+                )
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary)
+                    Text("Unable to display file")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
@@ -173,7 +218,7 @@ struct TabbedRootView: View {
             Text("No Files Open")
                 .font(.title3)
                 .foregroundColor(.secondary)
-            Text("Open a JSONL file to get started.")
+            Text("Open a file to get started.")
                 .font(.callout)
                 .foregroundColor(.secondary)
             Button("Open File\u{2026}") {
