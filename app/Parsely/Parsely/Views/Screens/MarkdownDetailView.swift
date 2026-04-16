@@ -412,6 +412,20 @@ struct MarkdownBlockView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
                 .id("heading-\(lineIndex)")
+                .background(
+                    GeometryReader { geo in
+                        if let headingID = headingLookup[lineIndex] {
+                            Color.clear.preference(
+                                key: HeadingPositionKey.self,
+                                value: [HeadingPosition(
+                                    lineIndex: lineIndex,
+                                    headingID: headingID,
+                                    minY: geo.frame(in: .named("markdownScroll")).minY
+                                )]
+                            )
+                        }
+                    }
+                )
 
             if level <= 2 {
                 Divider()
@@ -420,20 +434,6 @@ struct MarkdownBlockView: View {
         }
         .padding(.bottom, level <= 2 ? 10 : 6)
         .accessibilityAddTraits(.isHeader)
-        .background(
-            GeometryReader { geo in
-                if let headingID = headingLookup[lineIndex] {
-                    Color.clear.preference(
-                        key: HeadingPositionKey.self,
-                        value: [HeadingPosition(
-                            lineIndex: lineIndex,
-                            headingID: headingID,
-                            minY: geo.frame(in: .named("markdownScroll")).minY
-                        )]
-                    )
-                }
-            }
-        )
     }
 
     private func topSpacingForLevel(_ level: Int) -> CGFloat {

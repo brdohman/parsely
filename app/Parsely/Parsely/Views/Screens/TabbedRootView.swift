@@ -197,7 +197,9 @@ struct TabbedRootView: View {
                     scrollTarget: tab.scrollTarget,
                     headingLookup: tab.headingLineIndexToID,
                     onVisibleHeadingChanged: { headingID in
-                        tab.selectedHeadingID = headingID
+                        if tab.selectedHeadingID != headingID {
+                            tab.selectedHeadingID = headingID
+                        }
                     }
                 )
             } else {
