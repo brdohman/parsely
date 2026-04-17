@@ -18,7 +18,9 @@ app/Parsely/
   Parsely.xcodeproj/
   Parsely/
     App/
-      ParselyApp.swift          # App entry point, menu commands, keyboard shortcuts
+      ParselyApp.swift          # App entry point + AppDelegate (NSAppleEventManager
+                                # intercept for file opens, per-Space window creation),
+                                # menu commands, keyboard shortcuts
     Models/
       JSONLDocument.swift        # File parsing, line collection
       JSONLLine.swift            # Individual line with parsed JSON
@@ -27,10 +29,11 @@ app/Parsely/
       MarkdownHeading.swift      # Heading tree model (level, title, children)
     ViewModels/
       ParselyViewModel.swift     # Per-tab state: document, selection, search, export
-      TabManager.swift           # Tab collection management
+      TabManager.swift           # Tab collection management (one instance per window)
     Views/
       Screens/
-        TabbedRootView.swift     # Root view: NavigationSplitView + tabs + toolbar
+        TabbedRootView.swift     # Root view: NavigationSplitView + tabs + toolbar +
+                                 # zoom; inlined WindowAccessor for NSWindow tracking
         SidebarView.swift        # Line list with inline search (JSONL)
         DetailView.swift         # JSON detail renderer
         MarkdownSidebarView.swift # Collapsible heading tree (Markdown)
@@ -42,6 +45,8 @@ app/Parsely/
         TabStripView.swift       # Tab bar component
         JumpToLineView.swift     # Jump-to-line modal
 ```
+
+**Note:** This Xcode project uses the legacy (non-synchronized) group model. New `.swift` files are NOT auto-picked up — they must be added to `project.pbxproj` via Xcode. When an automated edit can't do that safely, INLINE small helper types (e.g., `WindowAccessor`) into an existing file in the same module.
 
 ## Building
 
@@ -82,6 +87,9 @@ xcodebuild -project Parsely.xcodeproj -scheme Parsely -configuration Release bui
 - **`.toolbar(removing: .sidebarToggle)`** — Sidebar is always visible, no collapse
 - **Tab strip inside detail column** — Not above `NavigationSplitView`, to keep sidebar rendering consistent regardless of tab count
 - **`@State` intermediary for search binding** — Direct `@Observable` binding to `.searchable` causes crashes on macOS 14.x
+- **File-open events via `NSAppleEventManager`, not `.onOpenURL`** — `CFBundleDocumentTypes` is declared in Info.plist (so the app registers as a viewer for `.jsonl`/`.md` in Finder). On macOS 26 SDK, AppKit's `NSDocumentController` routes those file-open Apple Events and spawns empty "ghost" windows when the SwiftUI scene count doesn't match. `AppDelegate.applicationWillFinishLaunching` registers a custom `kAEOpenDocuments` handler that runs BEFORE `NSDocumentController`, extracts URLs, and posts them via `.openFileURL` notification. SwiftUI's `.onOpenURL` is NOT used.
+- **Per-Space windows via programmatic `NSHostingController<TabbedRootView>`** — The first window is a SwiftUI `Window(id: "main")` scene. Subsequent windows (one per macOS Space) are created in AppKit when a file is opened on a Space that has no existing Parsely window. Each window owns its own `TabManager`.
+- **Serialize file-open routing** — `AppDelegate.route(urls:)` posts ONE `.openFileURL` notification with a `[URL]` payload; `TabbedRootView` processes them in a single `Task` with sequential `await manager.openFile(from:)` to avoid races on `TabManager.tabs` / `activeTabID`.
 
 ## Bundle Identifiers
 
