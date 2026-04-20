@@ -278,9 +278,27 @@ final class ParselyViewModel: Identifiable {
     }
 
     func save() async {
-        guard let url = fileURL else { return }
-        let textToSave = draftText
-        await MainActor.run { self.isSaving = true }
+        struct SaveSnapshot {
+            let url: URL
+            let text: String
+            let type: FileType
+            let previousLineNumber: Int?
+        }
+
+        let snapshot: SaveSnapshot? = await MainActor.run {
+            guard !isSaving, let url = fileURL else { return nil }
+            isSaving = true
+            return SaveSnapshot(
+                url: url,
+                text: draftText,
+                type: fileType,
+                previousLineNumber: fileType == .jsonl ? selectedLine?.lineNumber : nil
+            )
+        }
+        guard let snapshot else { return }
+
+        let url = snapshot.url
+        let textToSave = snapshot.text
 
         let didAccess = url.startAccessingSecurityScopedResource()
         defer {
@@ -293,11 +311,8 @@ final class ParselyViewModel: Identifiable {
 
         switch writeResult {
         case .success:
-            let currentType = fileType
-            let previousLineNumber = currentType == .jsonl ? selectedLine?.lineNumber : nil
-
             let parsed: ParsedDocument = await Task.detached(priority: .userInitiated) {
-                switch currentType {
+                switch snapshot.type {
                 case .jsonl:
                     return .jsonl(JSONLDocument.parse(rawContent: textToSave, url: url))
                 case .markdown:
@@ -307,7 +322,7 @@ final class ParselyViewModel: Identifiable {
 
             await MainActor.run {
                 self.originalText = textToSave
-                self.applyReparsed(parsed, previousLineNumber: previousLineNumber)
+                self.applyReparsed(parsed, previousLineNumber: snapshot.previousLineNumber)
                 self.isSaving = false
             }
         case .failure(let error):
