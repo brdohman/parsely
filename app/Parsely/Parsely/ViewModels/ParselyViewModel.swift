@@ -293,9 +293,21 @@ final class ParselyViewModel: Identifiable {
 
         switch writeResult {
         case .success:
+            let currentType = fileType
+            let previousLineNumber = currentType == .jsonl ? selectedLine?.lineNumber : nil
+
+            let parsed: ParsedDocument = await Task.detached(priority: .userInitiated) {
+                switch currentType {
+                case .jsonl:
+                    return .jsonl(JSONLDocument.parse(rawContent: textToSave, url: url))
+                case .markdown:
+                    return .markdown(MarkdownDocument.parse(rawContent: textToSave, url: url))
+                }
+            }.value
+
             await MainActor.run {
                 self.originalText = textToSave
-                self.reparseAfterSave(rawContent: textToSave, url: url)
+                self.applyReparsed(parsed, previousLineNumber: previousLineNumber)
                 self.isSaving = false
             }
         case .failure(let error):
@@ -306,11 +318,14 @@ final class ParselyViewModel: Identifiable {
         }
     }
 
-    private func reparseAfterSave(rawContent: String, url: URL) {
-        switch fileType {
-        case .jsonl:
-            let previousLineNumber = selectedLine?.lineNumber
-            let doc = JSONLDocument.parse(rawContent: rawContent, url: url)
+    private enum ParsedDocument {
+        case jsonl(JSONLDocument)
+        case markdown(MarkdownDocument)
+    }
+
+    private func applyReparsed(_ parsed: ParsedDocument, previousLineNumber: Int?) {
+        switch parsed {
+        case .jsonl(let doc):
             self.document = doc
             if let num = previousLineNumber,
                let restored = doc.lines.first(where: { $0.lineNumber == num }) {
@@ -318,8 +333,7 @@ final class ParselyViewModel: Identifiable {
             } else {
                 self.selectedLineID = doc.lines.first?.id
             }
-        case .markdown:
-            let doc = MarkdownDocument.parse(rawContent: rawContent, url: url)
+        case .markdown(let doc):
             self.markdownDocument = doc
         }
     }

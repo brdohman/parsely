@@ -74,7 +74,9 @@ struct TabItemView: View {
         .onHover { hovering in
             isHovering = hovering
         }
-        .accessibilityLabel(Text("\(tab.displayName), tab"))
+        .accessibilityLabel(Text(tab.isDirty
+            ? "\(tab.displayName), unsaved changes, tab"
+            : "\(tab.displayName), tab"))
         .accessibilityAddTraits(isActive ? [.isSelected] : [])
     }
 }

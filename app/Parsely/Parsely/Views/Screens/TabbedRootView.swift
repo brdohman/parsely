@@ -416,9 +416,9 @@ struct TabbedRootView: View {
     private var dirtyAlertTitle: String {
         if let action = pendingDirtyAction,
            let tab = manager.tabs.first(where: { $0.id == action.tabID }) {
-            return "Save changes to \(tab.displayName)?"
+            return String(localized: "Save changes to \(tab.displayName)?")
         }
-        return "Save changes?"
+        return String(localized: "Save changes?")
     }
 
     private func requestExitEditing(for tab: ParselyViewModel) {
