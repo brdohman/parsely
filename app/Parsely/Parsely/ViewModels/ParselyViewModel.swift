@@ -43,6 +43,21 @@ final class ParselyViewModel: Identifiable {
     var showJumpToLine: Bool = false
     var exportCopied: Bool = false
 
+    // MARK: - Editing
+
+    var isEditing: Bool = false
+    var draftText: String = ""
+    var isSaving: Bool = false
+    private var originalText: String = ""
+
+    var isDirty: Bool {
+        isEditing && draftText != originalText
+    }
+
+    var canEdit: Bool {
+        fileURL != nil && isLoaded
+    }
+
     var selectedLine: JSONLLine? {
         guard let id = selectedLineID else { return nil }
         return document?.lines.first(where: { $0.id == id })
@@ -162,79 +177,150 @@ final class ParselyViewModel: Identifiable {
             }
         }
 
+        // Read raw contents once so we can preserve the exact bytes for editing.
+        let readResult: Result<String, Error> = await Task.detached(priority: .userInitiated) {
+            Result { try String(contentsOf: url, encoding: .utf8) }
+        }.value
+
+        let rawContent: String
+        switch readResult {
+        case .success(let content):
+            rawContent = content
+        case .failure(let error):
+            await MainActor.run {
+                self.errorMessage = "Failed to load file: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+            return
+        }
+
         switch detectedType {
         case .markdown:
-            await loadMarkdownFile(from: url)
+            await loadMarkdownFile(rawContent: rawContent, url: url)
         case .jsonl:
-            await loadJSONLFile(from: url)
+            await loadJSONLFile(rawContent: rawContent, url: url)
         }
     }
 
-    private func loadMarkdownFile(from url: URL) async {
-        let result: Result<MarkdownDocument, Error> = await Task.detached(priority: .userInitiated) {
-            Result { try MarkdownDocument.parse(from: url) }
+    private func loadMarkdownFile(rawContent: String, url: URL) async {
+        let doc = await Task.detached(priority: .userInitiated) {
+            MarkdownDocument.parse(rawContent: rawContent, url: url)
         }.value
 
-        switch result {
-        case .success(let doc):
-            await MainActor.run {
-                if doc.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    self.displayName = url.lastPathComponent
-                    self.fileURL = url
-                    self.errorMessage = "This file is empty."
-                    self.markdownDocument = nil
-                    self.isLoading = false
-                } else {
-                    self.markdownDocument = doc
-                    self.fileURL = url
-                    self.displayName = url.lastPathComponent
-                    self.isLoading = false
-                }
-            }
-        case .failure(let error):
-            await MainActor.run {
-                self.errorMessage = "Failed to load file: \(error.localizedDescription)"
+        await MainActor.run {
+            if rawContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                self.displayName = url.lastPathComponent
+                self.fileURL = url
+                self.originalText = rawContent
+                self.errorMessage = "This file is empty."
+                self.markdownDocument = nil
+                self.isLoading = false
+            } else {
+                self.markdownDocument = doc
+                self.fileURL = url
+                self.originalText = rawContent
+                self.displayName = url.lastPathComponent
                 self.isLoading = false
             }
         }
     }
 
-    private func loadJSONLFile(from url: URL) async {
-        // Parse on a background thread to avoid blocking the UI
-        let result: Result<JSONLDocument, Error> = await Task.detached(priority: .userInitiated) {
-            Result { try JSONLDocument.parse(from: url) }
+    private func loadJSONLFile(rawContent: String, url: URL) async {
+        let doc = await Task.detached(priority: .userInitiated) {
+            JSONLDocument.parse(rawContent: rawContent, url: url)
         }.value
 
-        switch result {
-        case .success(let doc):
-            let allFailed = !doc.lines.isEmpty && doc.lines.allSatisfy { $0.parseError != nil }
-            let isEmpty = doc.lines.isEmpty
+        let allFailed = !doc.lines.isEmpty && doc.lines.allSatisfy { $0.parseError != nil }
+        let isEmpty = doc.lines.isEmpty
+        await MainActor.run {
+            if isEmpty {
+                self.displayName = url.lastPathComponent
+                self.fileURL = url
+                self.originalText = rawContent
+                self.errorMessage = "This file is empty. There are no lines to display."
+                self.document = nil
+                self.isLoading = false
+            } else if allFailed {
+                self.displayName = url.lastPathComponent
+                self.fileURL = url
+                self.originalText = rawContent
+                self.errorMessage = "This file doesn't contain valid JSON. Parsely can only display JSONL (JSON Lines) files where each line is a JSON object."
+                self.document = nil
+                self.isLoading = false
+            } else {
+                self.document = doc
+                self.fileURL = url
+                self.originalText = rawContent
+                self.displayName = url.lastPathComponent
+                self.selectedLineID = doc.lines.first?.id
+                self.isLoading = false
+            }
+        }
+    }
+
+    // MARK: - Editing
+
+    func beginEditing() {
+        guard canEdit else { return }
+        draftText = originalText
+        isEditing = true
+    }
+
+    /// Exits edit mode, discarding any unsaved draft changes.
+    func discardDraftAndExitEditing() {
+        draftText = originalText
+        isEditing = false
+    }
+
+    /// Exits edit mode without modifying the draft (used after a successful save).
+    func exitEditing() {
+        isEditing = false
+    }
+
+    func save() async {
+        guard let url = fileURL else { return }
+        let textToSave = draftText
+        await MainActor.run { self.isSaving = true }
+
+        let didAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if didAccess { url.stopAccessingSecurityScopedResource() }
+        }
+
+        let writeResult: Result<Void, Error> = await Task.detached(priority: .userInitiated) {
+            Result { try textToSave.write(to: url, atomically: true, encoding: .utf8) }
+        }.value
+
+        switch writeResult {
+        case .success:
             await MainActor.run {
-                if isEmpty {
-                    self.displayName = url.lastPathComponent
-                    self.fileURL = url
-                    self.errorMessage = "This file is empty. There are no lines to display."
-                    self.document = nil
-                    self.isLoading = false
-                } else if allFailed {
-                    self.displayName = url.lastPathComponent
-                    self.fileURL = url
-                    self.errorMessage = "This file doesn't contain valid JSON. Parsely can only display JSONL (JSON Lines) files where each line is a JSON object."
-                    self.document = nil
-                    self.isLoading = false
-                } else {
-                    self.document = doc
-                    self.fileURL = url
-                    self.displayName = url.lastPathComponent
-                    self.selectedLineID = doc.lines.first?.id
-                    self.isLoading = false
-                }
+                self.originalText = textToSave
+                self.reparseAfterSave(rawContent: textToSave, url: url)
+                self.isSaving = false
             }
         case .failure(let error):
             await MainActor.run {
-                self.errorMessage = "Failed to load file: \(error.localizedDescription)"
-                self.isLoading = false
+                self.errorMessage = "Failed to save: \(error.localizedDescription)"
+                self.isSaving = false
             }
+        }
+    }
+
+    private func reparseAfterSave(rawContent: String, url: URL) {
+        switch fileType {
+        case .jsonl:
+            let previousLineNumber = selectedLine?.lineNumber
+            let doc = JSONLDocument.parse(rawContent: rawContent, url: url)
+            self.document = doc
+            if let num = previousLineNumber,
+               let restored = doc.lines.first(where: { $0.lineNumber == num }) {
+                self.selectedLineID = restored.id
+            } else {
+                self.selectedLineID = doc.lines.first?.id
+            }
+        case .markdown:
+            let doc = MarkdownDocument.parse(rawContent: rawContent, url: url)
+            self.markdownDocument = doc
         }
     }
 

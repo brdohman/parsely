@@ -9,7 +9,11 @@ struct JSONLDocument {
 
     static func parse(from url: URL) throws -> JSONLDocument {
         let content = try String(contentsOf: url, encoding: .utf8)
-        let rawLines = content.components(separatedBy: .newlines)
+        return parse(rawContent: content, url: url)
+    }
+
+    static func parse(rawContent: String, url: URL) -> JSONLDocument {
+        let rawLines = rawContent.components(separatedBy: .newlines)
 
         var lines: [JSONLLine] = []
         var lineNumber = 1

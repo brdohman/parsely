@@ -8,11 +8,15 @@ struct MarkdownDocument {
 
     static func parse(from url: URL) throws -> MarkdownDocument {
         let content = try String(contentsOf: url, encoding: .utf8)
-        let headings = extractHeadingTree(from: content)
+        return parse(rawContent: content, url: url)
+    }
+
+    static func parse(rawContent: String, url: URL) -> MarkdownDocument {
+        let headings = extractHeadingTree(from: rawContent)
         return MarkdownDocument(
             fileURL: url,
             fileName: url.lastPathComponent,
-            content: content,
+            content: rawContent,
             headings: headings
         )
     }
