@@ -137,6 +137,13 @@ struct ParselyApp: App {
                     NotificationCenter.default.post(name: .closeTab, object: nil)
                 }
                 .keyboardShortcut("w", modifiers: .command)
+
+                Divider()
+
+                Button("Save") {
+                    NotificationCenter.default.post(name: .saveFile, object: nil)
+                }
+                .keyboardShortcut("s", modifiers: .command)
             }
             CommandMenu("Navigation") {
                 Button("Jump to Line\u{2026}") {
@@ -213,5 +220,6 @@ extension Notification.Name {
     static let zoomOut = Notification.Name("com.parsely.zoomOut")
     static let zoomReset = Notification.Name("com.parsely.zoomReset")
     static let openFileURL = Notification.Name("com.parsely.openFileURL")
+    static let saveFile = Notification.Name("com.parsely.saveFile")
 }
 

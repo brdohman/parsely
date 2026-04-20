@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TabStripView: View {
     @Bindable var manager: TabManager
+    var onRequestClose: (UUID) -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -16,9 +17,7 @@ struct TabStripView: View {
                             }
                         },
                         onClose: {
-                            withAnimation(.easeOut(duration: 0.15)) {
-                                manager.closeTab(tab.id)
-                            }
+                            onRequestClose(tab.id)
                         }
                     )
                 }
@@ -46,7 +45,7 @@ struct TabItemView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(isActive ? .primary : .secondary)
 
-            Text(tab.displayName)
+            Text(verbatim: tab.isDirty ? "\u{2022} \(tab.displayName)" : tab.displayName)
                 .font(.callout)
                 .fontWeight(isActive ? .medium : .regular)
                 .foregroundStyle(isActive ? .primary : .secondary)
@@ -75,7 +74,11 @@ struct TabItemView: View {
         .onHover { hovering in
             isHovering = hovering
         }
-        .accessibilityLabel(Text("\(tab.displayName), tab"))
+        .accessibilityLabel(Text(
+            tab.isDirty
+                ? String(localized: "\(tab.displayName), unsaved changes, tab")
+                : String(localized: "\(tab.displayName), tab")
+        ))
         .accessibilityAddTraits(isActive ? [.isSelected] : [])
     }
 }
